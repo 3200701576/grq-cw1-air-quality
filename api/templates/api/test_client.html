@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Air Quality API Test Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 24px;
+            max-width: 760px;
+        }
+        h1 {
+            margin-bottom: 8px;
+        }
+        p {
+            margin-top: 0;
+            color: #444;
+        }
+        form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .full {
+            grid-column: 1 / -1;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 14px;
+            cursor: pointer;
+        }
+        pre {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Air Quality API Test Client</h1>
+    <p>Use this page to test <code>POST /api/records/</code>.</p>
+
+    <form id="recordForm">
+        <div>
+            <label for="city">City (required)</label>
+            <input id="city" name="city" value="Delhi" required>
+        </div>
+        <div>
+            <label for="date">Date (required)</label>
+            <input id="date" name="date" type="date" value="2020-01-01" required>
+        </div>
+        <div>
+            <label for="pm25">PM2.5</label>
+            <input id="pm25" name="pm25" type="number" step="any" value="120.5">
+        </div>
+        <div>
+            <label for="pm10">PM10</label>
+            <input id="pm10" name="pm10" type="number" step="any" value="180.2">
+        </div>
+        <div>
+            <label for="no2">NO2</label>
+            <input id="no2" name="no2" type="number" step="any" value="55.4">
+        </div>
+        <div>
+            <label for="co">CO</label>
+            <input id="co" name="co" type="number" step="any" value="1.1">
+        </div>
+        <div class="full">
+            <label for="aqi">AQI</label>
+            <input id="aqi" name="aqi" type="number" value="250">
+        </div>
+        <div class="full">
+            <button type="submit">Send POST Request</button>
+        </div>
+    </form>
+
+    <pre id="output">Response will appear here.</pre>
+
+    <script>
+        const form = document.getElementById("recordForm");
+        const output = document.getElementById("output");
+
+        function toNumberOrNull(value, asInt = false) {
+            if (value === "" || value === null || value === undefined) {
+                return null;
+            }
+            return asInt ? parseInt(value, 10) : parseFloat(value);
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const payload = {
+                city: document.getElementById("city").value,
+                date: document.getElementById("date").value,
+                pm25: toNumberOrNull(document.getElementById("pm25").value),
+                pm10: toNumberOrNull(document.getElementById("pm10").value),
+                no2: toNumberOrNull(document.getElementById("no2").value),
+                co: toNumberOrNull(document.getElementById("co").value),
+                aqi: toNumberOrNull(document.getElementById("aqi").value, true)
+            };
+
+            output.textContent = "Sending request...";
+
+            try {
+                const response = await fetch("/api/records/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                output.textContent = JSON.stringify(
+                    {
+                        status: response.status,
+                        ok: response.ok,
+                        data: data
+                    },
+                    null,
+                    2
+                );
+            } catch (error) {
+                output.textContent = `Request failed: ${error}`;
+            }
+        });
+    </script>
+</body>
+</html>

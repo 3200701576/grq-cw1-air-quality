@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual environment
+.venv/
+venv/
+
+# Django
+staticfiles/
+media/
+
+# Environment variables
+.env
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Data strategy:
+# keep only city_day.csv in git, ignore all other raw datasets
+data/*
+!data/city_day.csv
