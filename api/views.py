@@ -12,9 +12,24 @@ class HealthCheckView(View):
         return JsonResponse({"status": "ok", "service": "air-quality-api"})
 
 
-class AirQualityRecordCreateView(generics.CreateAPIView):
+class AirQualityRecordListCreateView(generics.ListCreateAPIView):
     queryset = AirQualityRecord.objects.all()
     serializer_class = AirQualityRecordSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        city = self.request.query_params.get("city")
+        start_date = self.request.query_params.get("start_date")
+        end_date = self.request.query_params.get("end_date")
+
+        if city:
+            queryset = queryset.filter(city__iexact=city)
+        if start_date:
+            queryset = queryset.filter(date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(date__lte=end_date)
+
+        return queryset
 
 
 class APITestPageView(TemplateView):
