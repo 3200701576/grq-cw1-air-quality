@@ -32,6 +32,44 @@ class AirQualityRecordCreateAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("city", response.data)
 
+    def test_create_record_duplicate_city_date_fails(self):
+        payload = {
+            "city": "Delhi",
+            "date": "2020-01-01",
+            "pm25": 120.5,
+            "pm10": 180.2,
+            "no2": 55.4,
+            "co": 1.1,
+            "aqi": 250,
+        }
+        self.client.post(reverse("record-list-create"), payload, format="json")
+        response = self.client.post(reverse("record-list-create"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("non_field_errors", response.data)
+
+    def test_create_record_invalid_date_format_fails(self):
+        payload = {
+            "city": "Delhi",
+            "date": "01-01-2020",
+            "aqi": 250,
+        }
+        response = self.client.post(reverse("record-list-create"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("date", response.data)
+
+    def test_create_record_invalid_numeric_type_fails(self):
+        payload = {
+            "city": "Delhi",
+            "date": "2020-01-01",
+            "aqi": "bad-value",
+        }
+        response = self.client.post(reverse("record-list-create"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("aqi", response.data)
+
 
 class AirQualityRecordListAPITests(APITestCase):
     def setUp(self):
@@ -84,3 +122,14 @@ class AirQualityRecordListAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
+
+    def test_list_records_filter_with_city_and_date_range(self):
+        response = self.client.get(
+            reverse("record-list-create"),
+            {"city": "Delhi", "start_date": "2020-01-02", "end_date": "2020-01-03"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["city"], "Delhi")
+        self.assertEqual(response.data[0]["date"], "2020-01-03")
