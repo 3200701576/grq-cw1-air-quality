@@ -158,3 +158,38 @@ class AirQualityRecordRetrieveAPITests(APITestCase):
         response = self.client.get(reverse("record-retrieve", args=[99999]))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_patch_record_success(self):
+        payload = {
+            "aqi": 199,
+            "pm25": 95.5,
+        }
+        response = self.client.patch(
+            reverse("record-retrieve", args=[self.record.id]), payload, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.record.refresh_from_db()
+        self.assertEqual(self.record.aqi, 199)
+        self.assertEqual(self.record.pm25, 95.5)
+
+    def test_patch_record_invalid_numeric_type_fails(self):
+        payload = {
+            "aqi": "bad-value",
+        }
+        response = self.client.patch(
+            reverse("record-retrieve", args=[self.record.id]), payload, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("aqi", response.data)
+
+    def test_patch_record_not_found(self):
+        payload = {
+            "aqi": 160,
+        }
+        response = self.client.patch(
+            reverse("record-retrieve", args=[99999]), payload, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

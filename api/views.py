@@ -32,7 +32,7 @@ class AirQualityRecordListCreateView(generics.ListCreateAPIView):
         return queryset
 
 
-class AirQualityRecordRetrieveView(generics.RetrieveAPIView):
+class AirQualityRecordRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     queryset = AirQualityRecord.objects.all()
     serializer_class = AirQualityRecordSerializer
 
