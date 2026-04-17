@@ -133,3 +133,28 @@ class AirQualityRecordListAPITests(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["city"], "Delhi")
         self.assertEqual(response.data[0]["date"], "2020-01-03")
+
+
+class AirQualityRecordRetrieveAPITests(APITestCase):
+    def setUp(self):
+        self.record = AirQualityRecord.objects.create(
+            city="Delhi",
+            date="2020-01-01",
+            pm25=120.0,
+            pm10=180.0,
+            no2=50.0,
+            co=1.0,
+            aqi=250,
+        )
+
+    def test_retrieve_record_success(self):
+        response = self.client.get(reverse("record-retrieve", args=[self.record.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.record.id)
+        self.assertEqual(response.data["city"], "Delhi")
+
+    def test_retrieve_record_not_found(self):
+        response = self.client.get(reverse("record-retrieve", args=[99999]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

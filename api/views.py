@@ -32,5 +32,10 @@ class AirQualityRecordListCreateView(generics.ListCreateAPIView):
         return queryset
 
 
+class AirQualityRecordRetrieveView(generics.RetrieveAPIView):
+    queryset = AirQualityRecord.objects.all()
+    serializer_class = AirQualityRecordSerializer
+
+
 class APITestPageView(TemplateView):
     template_name = "api/test_client.html"
