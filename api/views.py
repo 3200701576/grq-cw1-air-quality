@@ -2,6 +2,9 @@ from django.http import JsonResponse
 from django.views import View
 from django.views.generic import TemplateView
 from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 
 from .models import AirQualityRecord
 from .serializers import AirQualityRecordSerializer
@@ -39,3 +42,70 @@ class AirQualityRecordRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAP
 
 class APITestPageView(TemplateView):
     template_name = "api/test_client.html"
+
+
+class CityTrendAnalyticsView(APIView):
+    """
+    获取指定城市某污染物的时间趋势数据
+    参数: city - 城市名
+          pollutant - 污染物类型 (pm25/pm10/no2/co/aqi)
+    返回: 按日期排序的污染物数值列表
+    """
+
+    VALID_POLLUTANTS = ["pm25", "pm10", "no2", "co", "aqi"]
+
+    def get(self, request):
+        city = request.query_params.get("city")
+        pollutant = request.query_params.get("pollutant")
+
+        # 验证必需参数
+        if not city:
+            return Response(
+                {"error": "city 参数是必需的"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not pollutant:
+            return Response(
+                {"error": "pollutant 参数是必需的"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 验证污染物类型
+        if pollutant not in self.VALID_POLLUTANTS:
+            return Response(
+                {
+                    "error": f"pollutant 参数无效，必须是: {', '.join(self.VALID_POLLUTANTS)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 查询该城市的记录，按日期升序
+        records = AirQualityRecord.objects.filter(city__iexact=city).order_by("date")
+
+        if not records.exists():
+            return Response(
+                {"message": f"未找到城市 {city} 的记录"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # 构建趋势数据
+        trend_data = [
+            {
+                "date": record.date.isoformat(),
+                "value": getattr(record, pollutant),
+            }
+            for record in records
+            if getattr(record, pollutant) is not None
+        ]
+
+        return Response(
+            {
+                "city": city,
+                "pollutant": pollutant,
+                "count": len(trend_data),
+                "data": trend_data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
