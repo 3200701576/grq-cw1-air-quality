@@ -1,13 +1,14 @@
 from django.http import JsonResponse
 from django.views import View
 from django.views.generic import TemplateView
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from .models import AirQualityRecord
-from .serializers import AirQualityRecordSerializer
+from .serializers import AirQualityRecordSerializer, CityTrendResponseSerializer
 
 
 class HealthCheckView(View):
@@ -54,6 +55,40 @@ class CityTrendAnalyticsView(APIView):
 
     VALID_POLLUTANTS = ["pm25", "pm10", "no2", "co", "aqi"]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="city",
+                location=OpenApiParameter.QUERY,
+                required=True,
+                type=str,
+                description="城市名称（精确匹配，不区分大小写）",
+            ),
+            OpenApiParameter(
+                name="pollutant",
+                location=OpenApiParameter.QUERY,
+                required=True,
+                type=str,
+                enum=["pm25", "pm10", "no2", "co", "aqi"],
+                description="污染物类型",
+            ),
+        ],
+        responses={
+            200: CityTrendResponseSerializer,
+            400: {
+                "type": "object",
+                "properties": {
+                    "error": {"type": "string", "example": "city 参数是必需的"}
+                },
+            },
+            404: {
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string", "example": "未找到城市 Delhi 的记录"}
+                },
+            },
+        },
+    )
     def get(self, request):
         city = request.query_params.get("city")
         pollutant = request.query_params.get("pollutant")
@@ -89,15 +124,15 @@ class CityTrendAnalyticsView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # 构建趋势数据
-        trend_data = [
-            {
-                "date": record.date.isoformat(),
-                "value": getattr(record, pollutant),
-            }
-            for record in records
-            if getattr(record, pollutant) is not None
-        ]
+        # 构建趋势数据 - 返回日期和对应的污染物值
+        trend_data = []
+        for record in records:
+            value = getattr(record, pollutant)
+            if value is not None:
+                trend_data.append({
+                    "date": record.date.isoformat(),
+                    pollutant: value,
+                })
 
         return Response(
             {
