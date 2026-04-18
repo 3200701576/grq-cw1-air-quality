@@ -193,3 +193,14 @@ class AirQualityRecordRetrieveAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_record_success(self):
+        response = self.client.delete(reverse("record-retrieve", args=[self.record.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(AirQualityRecord.objects.count(), 0)
+
+    def test_delete_record_not_found(self):
+        response = self.client.delete(reverse("record-retrieve", args=[99999]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
