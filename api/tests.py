@@ -254,7 +254,7 @@ class CityTrendAnalyticsAPITests(APITestCase):
         self.assertEqual(response.data["count"], 3)
         self.assertEqual(len(response.data["data"]), 3)
         self.assertEqual(response.data["data"][0]["date"], "2020-01-01")
-        self.assertEqual(response.data["data"][0]["pm25"], 120.0)
+        self.assertEqual(response.data["data"][0]["value"], 120.0)
 
     def test_city_trend_requires_city_parameter(self):
         response = self.client.get(reverse("city-trend-analytics"), {"pollutant": "pm25"})
@@ -284,22 +284,22 @@ class CityTrendAnalyticsAPITests(APITestCase):
         # 测试 aqi
         response = self.client.get(reverse("city-trend-analytics"), {"city": "Delhi", "pollutant": "aqi"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["data"][0]["aqi"], 250)
+        self.assertEqual(response.data["data"][0]["value"], 250)
 
         # 测试 no2
         response = self.client.get(reverse("city-trend-analytics"), {"city": "Delhi", "pollutant": "no2"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["data"][0]["no2"], 50.0)
+        self.assertEqual(response.data["data"][0]["value"], 50.0)
 
         # 测试 co
         response = self.client.get(reverse("city-trend-analytics"), {"city": "Delhi", "pollutant": "co"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["data"][0]["co"], 1.0)
+        self.assertEqual(response.data["data"][0]["value"], 1.0)
 
         # 测试 pm10
         response = self.client.get(reverse("city-trend-analytics"), {"city": "Delhi", "pollutant": "pm10"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["data"][0]["pm10"], 180.0)
+        self.assertEqual(response.data["data"][0]["value"], 180.0)
 
     def test_city_trend_filters_null_values(self):
         # 创建一个记录，pm25 为 null
@@ -318,5 +318,5 @@ class CityTrendAnalyticsAPITests(APITestCase):
         # 只有前 3 条记录有 pm25 值，第 4 条为 None 应该被过滤
         self.assertEqual(response.data["count"], 3)
         for item in response.data["data"]:
-            self.assertIsNotNone(item["pm25"])
+            self.assertIsNotNone(item["value"])
 

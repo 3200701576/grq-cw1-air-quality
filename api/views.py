@@ -131,7 +131,7 @@ class CityTrendAnalyticsView(APIView):
             if value is not None:
                 trend_data.append({
                     "date": record.date.isoformat(),
-                    pollutant: value,
+                    "value": value,  # 使用固定字段名 "value"
                 })
 
         return Response(
