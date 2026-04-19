@@ -20,7 +20,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--limit',
             type=int,
-            help='Limit number of records to import (for testing)',
+            default=1000,
+            help='Limit number of records to import (default: 1000)',
         )
 
     def handle(self, *args, **options):
@@ -31,15 +32,19 @@ class Command(BaseCommand):
             AirQualityRecord.objects.all().delete()
             self.stdout.write(self.style.WARNING(f'Deleted {count} existing records'))
 
-        # Count total rows first
+        # Required fields that must have valid data
+        required_fields = ['City', 'Date', 'PM2.5', 'PM10', 'NO2', 'CO', 'AQI']
+
+        # Count total valid rows first
+        total_valid_rows = 0
         with open(csv_path, 'r', encoding='utf-8') as f:
-            total_rows = sum(1 for _ in f) - 1  # subtract header
+            reader = csv.DictReader(f)
+            for row in reader:
+                if all(row.get(field, '').strip() for field in required_fields):
+                    total_valid_rows += 1
 
-        limit = options.get('limit')
-        if limit:
-            total_rows = min(total_rows, limit)
-
-        self.stdout.write(f'Found {total_rows} records to import')
+        limit = options.get('limit', 1000)
+        self.stdout.write(f'Found {total_valid_rows} valid records in CSV')
 
         imported = 0
         skipped = 0
@@ -49,8 +54,12 @@ class Command(BaseCommand):
             reader = csv.DictReader(f)
 
             for row_num, row in enumerate(reader, start=2):
-                if limit and imported >= limit:
+                if imported >= limit:
                     break
+
+                # Check if all required fields have valid data
+                if not all(row.get(field, '').strip() for field in required_fields):
+                    continue
 
                 try:
                     # Parse date
@@ -58,7 +67,6 @@ class Command(BaseCommand):
                     try:
                         date = datetime.strptime(date_str, '%Y-%m-%d').date()
                     except ValueError:
-                        self.stderr.write(f'Row {row_num}: Invalid date format "{date_str}"')
                         errors += 1
                         continue
 
@@ -84,14 +92,13 @@ class Command(BaseCommand):
                     record.save()
                     imported += 1
 
-                    # Progress indicator every 1000 records
-                    if imported % 1000 == 0:
-                        self.stdout.write(f'Progress: {imported}/{total_rows} records imported')
+                    # Progress indicator every 100 records
+                    if imported % 100 == 0:
+                        self.stdout.write(f'Progress: {imported}/{limit} records imported')
 
                 except IntegrityError:
                     skipped += 1
                 except Exception as e:
-                    self.stderr.write(f'Row {row_num}: Error - {str(e)}')
                     errors += 1
 
         self.stdout.write(self.style.SUCCESS(

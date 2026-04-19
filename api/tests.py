@@ -1,8 +1,21 @@
 from django.urls import reverse
+from django.http import JsonResponse
+import json
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import AirQualityRecord
+
+
+class HealthCheckAPITests(APITestCase):
+    def test_health_check_returns_ok(self):
+        response = self.client.get(reverse("health-check"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/json")
+        data = json.loads(response.content)
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["service"], "air-quality-api")
 
 
 class AirQualityRecordCreateAPITests(APITestCase):
@@ -172,6 +185,36 @@ class AirQualityRecordRetrieveAPITests(APITestCase):
         self.record.refresh_from_db()
         self.assertEqual(self.record.aqi, 199)
         self.assertEqual(self.record.pm25, 95.5)
+
+    def test_put_record_success(self):
+        payload = {
+            "city": "Delhi",
+            "date": "2020-01-01",
+            "pm25": 200.0,
+            "pm10": 300.0,
+            "no2": 80.0,
+            "co": 2.0,
+            "aqi": 300,
+        }
+        response = self.client.put(
+            reverse("record-retrieve", args=[self.record.id]), payload, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.record.refresh_from_db()
+        self.assertEqual(self.record.pm25, 200.0)
+        self.assertEqual(self.record.aqi, 300)
+
+    def test_put_record_missing_required_field(self):
+        payload = {
+            "pm25": 200.0,
+        }
+        response = self.client.put(
+            reverse("record-retrieve", args=[self.record.id]), payload, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("city", response.data)
 
     def test_patch_record_invalid_numeric_type_fails(self):
         payload = {

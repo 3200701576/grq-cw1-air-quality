@@ -1,6 +1,5 @@
 from django.http import JsonResponse
 from django.views import View
-from django.views.generic import TemplateView
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -39,10 +38,6 @@ class AirQualityRecordListCreateView(generics.ListCreateAPIView):
 class AirQualityRecordRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = AirQualityRecord.objects.all()
     serializer_class = AirQualityRecordSerializer
-
-
-class APITestPageView(TemplateView):
-    template_name = "api/test_client.html"
 
 
 class CityTrendAnalyticsView(APIView):

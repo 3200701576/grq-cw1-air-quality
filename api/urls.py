@@ -1,7 +1,6 @@
 from django.urls import path
 
 from .views import (
-    APITestPageView,
     AirQualityRecordListCreateView,
     AirQualityRecordRetrieveUpdateDestroyView,
     CityTrendAnalyticsView,
@@ -13,5 +12,4 @@ urlpatterns = [
     path("records/", AirQualityRecordListCreateView.as_view(), name="record-list-create"),
     path("records/<int:pk>/", AirQualityRecordRetrieveUpdateDestroyView.as_view(), name="record-retrieve"),
     path("analytics/city-trend/", CityTrendAnalyticsView.as_view(), name="city-trend-analytics"),
-    path("test-client/", APITestPageView.as_view(), name="api-test-client"),
 ]
