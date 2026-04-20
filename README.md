@@ -24,8 +24,7 @@ This project provides a RESTful API service for analyzing and displaying urban a
 
 Data files are located in the `data/` directory:
 
-- **city_day.csv** - City daily air quality data (tracked in Git)
-- city_hour.csv, station_day.csv, station_hour.csv, stations.csv - Local datasets (not tracked)
+- **city_day.csv** - City daily air quality data 
 
 ---
 
@@ -64,12 +63,80 @@ After starting, visit http://127.0.0.1:8000/
 
 ## Deployment
 
-| Environment | URL | Notes |
-|-------------|-----|-------|
-| Local Dev | http://127.0.0.1:8000/ | Default development server |
-| Production | TBD | Update with your server address |
+| Environment | URL |
+|-------------|-----|
+| Local Dev | http://127.0.0.1:8000/ |
+| PythonAnywhere | https://grq.pythonanywhere.com/ |
 
-> For cloud deployment, consider using Gunicorn + Nginx or Docker containers.
+---
+
+## PythonAnywhere Deployment Guide
+
+### 1. Prepare Your Code
+
+Push your completed code to a GitHub repository.
+
+### 2. Clone Code on PythonAnywhere
+
+Open PythonAnywhere Bash terminal:
+
+```bash
+cd ~
+git clone https://github.com/<your-username>/<your-repo>.git grq
+cd ~/grq
+```
+
+### 3. Create Virtual Environment
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 4. Configure Database
+
+```bash
+python manage.py migrate
+python manage.py import_data
+```
+
+### 5. Configure Web App
+
+1. Go to the **Web** page
+2. Click **Add a new web app**
+3. Select **Manual configuration**
+4. Choose Python version
+5. Edit the **WSGI configuration file**, replace with Django WSGI config:
+
+```python
+import os
+import sys
+
+path = '/home/grq/grq'
+if path not in sys.path:
+    sys.path.insert(0, path)
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings'
+
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()
+```
+
+6. Configure static files:
+
+| Setting | Value |
+|---------|-------|
+| URL | `/static/` |
+| Directory | `/home/grq/grq/static/` |
+
+### 6. Reload Web App
+
+Click the **Reload** button to apply changes.
+
+### 7. Verify Deployment
+
+Visit https://grq.pythonanywhere.com/api/health/ to confirm the service is running.
 
 ---
 
@@ -79,14 +146,13 @@ After starting, visit http://127.0.0.1:8000/
 
 | Doc Type | URL | Description |
 |----------|-----|-------------|
-| Swagger UI | http://127.0.0.1:8000/api/docs/ | Interactive API documentation |
-| ReDoc | http://127.0.0.1:8000/api/redoc/ | Alternative API documentation style |
-| OpenAPI Schema | http://127.0.0.1:8000/api/schema/ | OpenAPI 3.0 JSON/YAML spec |
+| Swagger UI | /api/docs/ | Interactive API documentation |
+| OpenAPI Schema | /api/schema/ | OpenAPI 3.0 JSON/YAML spec |
 
 ### Health Check
 
 ```
-GET http://127.0.0.1:8000/api/health/
+GET /api/health/
 ```
 
 Response:
@@ -150,51 +216,4 @@ code/
 ├── manage.py                 # Django management script
 ├── requirements.txt          # Python dependencies
 └── README.md                 # Project documentation
-```
-
----
-
-## Git Workflow
-
-### First Commit to GitHub
-
-```bash
-git init
-git add .
-git commit -m "chore: initialize django drf project skeleton"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo>.git
-git push -u origin main
-```
-
-### Per-Feature Commit
-
-```bash
-git add .
-git commit -m "feat(api): add <endpoint-name> endpoint"
-git push
-```
-
----
-
-## FAQ
-
-### Data Import Fails
-
-Ensure `data/city_day.csv` exists and has correct format:
-
-```bash
-python manage.py import_data
-```
-
-### Large File Push Issues
-
-If first push fails due to large CSV files:
-
-```bash
-git reset --soft HEAD~1
-git restore --staged data/city_hour.csv data/station_day.csv data/station_hour.csv data/stations.csv
-git add .
-git commit -m "chore: initialize django drf project skeleton"
-git push -u origin main --force
 ```
