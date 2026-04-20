@@ -24,8 +24,7 @@
 
 数据源文件位于 `data/` 目录：
 
-- **city_day.csv** - 城市每日空气质量数据（已纳入版本控制）
-- city_hour.csv、station_day.csv、station_hour.csv、stations.csv 为本地数据集（未纳入版本控制）
+- **city_day.csv** - 城市每日空气质量数据
 
 ---
 
@@ -64,12 +63,80 @@ python manage.py runserver
 
 ## 部署地址
 
-| 环境 | 地址 | 说明 |
-|------|------|------|
-| 本地开发 | http://127.0.0.1:8000/ | 默认开发服务器 |
-| 生产部署 | 待配置 | 请根据实际服务器地址更新 |
+| 环境 | 地址 |
+|------|------|
+| 本地开发 | http://127.0.0.1:8000/ |
+| PythonAnywhere | https://grq.pythonanywhere.com/ |
 
-> 如需部署到云服务器，建议使用 Gunicorn + Nginx 或 Docker 容器化部署。
+---
+
+## PythonAnywhere 部署指南
+
+### 1. 准备代码
+
+在本地完成开发后，将代码推送到 GitHub 仓库。
+
+### 2. 在 PythonAnywhere 上克隆代码
+
+打开 PythonAnywhere 的 Bash 终端：
+
+```bash
+cd ~
+git clone https://github.com/<your-username>/<your-repo>.git grq
+cd ~/grq
+```
+
+### 3. 创建虚拟环境
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 4. 配置数据库
+
+```bash
+python manage.py migrate
+python manage.py import_data
+```
+
+### 5. 配置 Web App
+
+1. 进入 **Web** 页面
+2. 点击 **Add a new web app**
+3. 选择 **Manual configuration**
+4. 选择 Python 版本
+5. 在 **WSGI configuration file** 中编辑，替换为 Django 的 WSGI 配置：
+
+```python
+import os
+import sys
+
+path = '/home/grq/grq'
+if path not in sys.path:
+    sys.path.insert(0, path)
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings'
+
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()
+```
+
+6. 配置静态文件：
+
+| 设置 | 值 |
+|------|------|
+| URL | `/static/` |
+| Directory | `/home/grq/grq/static/` |
+
+### 6. 重启 Web App
+
+点击 **Reload** 按钮使配置生效。
+
+### 7. 验证部署
+
+访问 https://grq.pythonanywhere.com/api/health/ 确认服务正常运行。
 
 ---
 
@@ -79,14 +146,13 @@ python manage.py runserver
 
 | 文档类型 | 地址 | 说明 |
 |----------|------|------|
-| Swagger UI | http://127.0.0.1:8000/api/docs/ | 交互式 API 文档 |
-| ReDoc | http://127.0.0.1:8000/api/redoc/ | 另一种 API 文档风格 |
-| OpenAPI Schema | http://127.0.0.1:8000/api/schema/ | OpenAPI 3.0 JSON/YAML |
+| Swagger UI | /api/docs/ | 交互式 API 文档 |
+| OpenAPI Schema | /api/schema/ | OpenAPI 3.0 JSON/YAML |
 
 ### 健康检查
 
 ```
-GET http://127.0.0.1:8000/api/health/
+GET /api/health/
 ```
 
 响应示例：
@@ -152,49 +218,3 @@ code/
 └── README.md                 # 项目文档
 ```
 
----
-
-## Git 使用规范
-
-### 首次提交到 GitHub
-
-```bash
-git init
-git add .
-git commit -m "chore: initialize django drf project skeleton"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo>.git
-git push -u origin main
-```
-
-### 每个 API 功能提交
-
-```bash
-git add .
-git commit -m "feat(api): add <endpoint-name> endpoint"
-git push
-```
-
----
-
-## 常见问题
-
-### 导入数据失败
-
-确保 `data/city_day.csv` 文件存在且格式正确：
-
-```bash
-python manage.py import_data
-```
-
-### 大文件推送问题
-
-如果首次推送因 CSV 文件过大失败：
-
-```bash
-git reset --soft HEAD~1
-git restore --staged data/city_hour.csv data/station_day.csv data/station_hour.csv data/stations.csv
-git add .
-git commit -m "chore: initialize django drf project skeleton"
-git push -u origin main --force
-```
